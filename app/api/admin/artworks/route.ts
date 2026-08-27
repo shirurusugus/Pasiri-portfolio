@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { prisma, createSafeRevision } from "@/lib/db/prisma";
 import { getSession } from "@/lib/auth/session";
 import { ArtworkSchema } from "@/lib/validation/schemas";
 
@@ -43,15 +43,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await prisma.revision.create({
-      data: {
-        entityType: "Artwork",
-        entityId: created.id,
-        version: 1,
-        title: created.title,
-        snapshot: JSON.stringify(created),
-        authorId: session.userId,
-      },
+    await createSafeRevision({
+      entityType: "Artwork",
+      entityId: created.id,
+      version: 1,
+      title: created.title,
+      snapshot: JSON.stringify(created),
+      authorId: session.userId,
     });
 
     return NextResponse.json({ success: true, artwork: created });

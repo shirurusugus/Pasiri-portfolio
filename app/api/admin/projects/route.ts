@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { prisma, createSafeRevision } from "@/lib/db/prisma";
 import { getSession } from "@/lib/auth/session";
 import { ProjectSchema } from "@/lib/validation/schemas";
 
@@ -53,15 +53,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await prisma.revision.create({
-      data: {
-        entityType: "Project",
-        entityId: created.id,
-        version: 1,
-        title: created.title,
-        snapshot: JSON.stringify({ ...created, timelineData }),
-        authorId: session.userId,
-      },
+    await createSafeRevision({
+      entityType: "Project",
+      entityId: created.id,
+      version: 1,
+      title: created.title,
+      snapshot: JSON.stringify({ ...created, timelineData }),
+      authorId: session.userId,
     });
 
     return NextResponse.json({ success: true, project: created });

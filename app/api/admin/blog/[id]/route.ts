@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { prisma, createSafeRevision } from "@/lib/db/prisma";
 import { getSession } from "@/lib/auth/session";
 import { BlogPostSchema } from "@/lib/validation/schemas";
 import { calculateReadingTime } from "@/lib/utils";
@@ -99,15 +99,13 @@ export async function PUT(
       where: { entityType: "BlogPost", entityId: id },
     });
 
-    await prisma.revision.create({
-      data: {
-        entityType: "BlogPost",
-        entityId: id,
-        version: revisionCount + 1,
-        title: updated.title,
-        snapshot: JSON.stringify({ ...updated, timelineData }),
-        authorId: session.userId,
-      },
+    await createSafeRevision({
+      entityType: "BlogPost",
+      entityId: id,
+      version: revisionCount + 1,
+      title: updated.title,
+      snapshot: JSON.stringify({ ...updated, timelineData }),
+      authorId: session.userId,
     });
 
     return NextResponse.json({ success: true, post: updated });

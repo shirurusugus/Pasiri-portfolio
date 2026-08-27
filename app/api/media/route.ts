@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ items });
+    return NextResponse.json({ items, media: items });
   } catch (error) {
     return NextResponse.json({ error: "Failed to list media." }, { status: 500 });
   }

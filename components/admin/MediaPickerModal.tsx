@@ -70,7 +70,7 @@ export function MediaPickerModal({
       const res = await fetch(`/api/media?${params.toString()}`);
       if (res.ok) {
         const data = await safeFetchJson(res);
-        setItems(data.media || []);
+        setItems(data.items || data.media || []);
       }
     } catch (err) {
       console.error(err);

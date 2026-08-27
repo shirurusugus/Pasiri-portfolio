@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { compressImageIfNeeded, safeFetchJson } from "@/lib/image-compress";
 
 interface MediaItem {
   id: string;
@@ -33,10 +34,14 @@ export default function AdminMediaPage() {
   const loadMedia = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/media?folder=${folder}&q=${encodeURIComponent(query)}`);
+      const params = new URLSearchParams();
+      if (folder && folder !== "all") params.append("folder", folder);
+      if (query) params.append("q", query);
+
+      const res = await fetch(`/api/media?${params.toString()}`);
       if (res.ok) {
-        const data = await res.json();
-        setItems(data.items || []);
+        const data = await safeFetchJson(res);
+        setItems(data.items || data.media || []);
       }
     } catch (err) {
       console.error(err);
@@ -58,8 +63,10 @@ export default function AdminMediaPage() {
 
     try {
       for (let i = 0; i < files.length; i++) {
+        const optimizedFile = await compressImageIfNeeded(files[i]);
+
         const formData = new FormData();
-        formData.append("file", files[i]);
+        formData.append("file", optimizedFile);
         formData.append("folder", folder === "all" ? "general" : folder);
 
         const res = await fetch("/api/media/upload", {
@@ -67,7 +74,7 @@ export default function AdminMediaPage() {
           body: formData,
         });
 
-        const data = await res.json();
+        const data = await safeFetchJson(res);
         if (!res.ok) throw new Error(data.error || "Upload failed");
       }
 

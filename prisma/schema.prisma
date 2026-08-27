@@ -1,0 +1,499 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ----------------------------------------------------
+// AUTHENTICATION & USER
+// ----------------------------------------------------
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         String     @default("ADMIN") // "ADMIN", "EDITOR"
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  revisions    Revision[]
+
+  @@map("users")
+}
+
+// ----------------------------------------------------
+// PROFILE, BIO & EDUCATION
+// ----------------------------------------------------
+
+model Profile {
+  id           String      @id @default(cuid())
+  fullName     String      @default("pasiri")
+  headline     String      @default("Software Engineer & Digital Product Designer")
+  bio          String
+  philosophy   String?
+  currentFocus String?
+  interests    String?
+  avatarUrl    String?
+  resumeUrl    String?
+  email        String?
+  githubUrl    String?
+  linkedinUrl  String?
+  twitterUrl   String?
+  websiteUrl   String?
+  location     String?     @default("Bangkok, Thailand")
+  availableFor String?     @default("Available for selected consulting & design engineering")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  educations   Education[]
+
+  @@map("profiles")
+}
+
+model Education {
+  id          String    @id @default(cuid())
+  profileId   String
+  institution String
+  degree      String
+  field       String
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  description String?
+  location    String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("educations")
+}
+
+// ----------------------------------------------------
+// EXPERIENCE (Itemized List / Vertical Journey)
+// ----------------------------------------------------
+
+model Experience {
+  id           String    @id @default(cuid())
+  title        String
+  organization String
+  location     String?
+  startDate    DateTime
+  endDate      DateTime?
+  present      Boolean   @default(false)
+  description  String
+  tags         String?   // Comma-separated or JSON
+  linkUrl      String?
+  order        Int       @default(0)
+  isVisible    Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("experiences")
+}
+
+// ----------------------------------------------------
+// SKILLS & CATEGORIES
+// ----------------------------------------------------
+
+model SkillCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique // "Programming", "Frontend", "Backend", "Database", "Tools", "Design"
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  skills    Skill[]
+
+  @@map("skill_categories")
+}
+
+model Skill {
+  id          String        @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?
+  order       Int           @default(0)
+  isFeatured  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  category    SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("skills")
+}
+
+// ----------------------------------------------------
+// CERTIFICATIONS
+// ----------------------------------------------------
+
+model Certification {
+  id             String    @id @default(cuid())
+  name           String
+  issuer         String
+  issueDate      DateTime
+  expirationDate DateTime?
+  credentialId   String?
+  credentialUrl  String?
+  imageUrl       String?
+  order          Int       @default(0)
+  isVisible      Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("certifications")
+}
+
+// ----------------------------------------------------
+// PROJECTS & CASE STUDIES
+// ----------------------------------------------------
+
+model Project {
+  id                  String         @id @default(cuid())
+  title               String
+  slug                String         @unique
+  shortSummary        String
+  year                Int            @default(2026)
+  startDate           DateTime?
+  endDate             DateTime?
+  role                String?
+  team                String?
+  organization        String?
+  category            String         @default("UX/UI Design") // "UX/UI Design", "Product Design", "Web Application", "Mobile", "Service Design", "Design Systems"
+  tags                String?        // Comma-separated
+  technologies        String?        // Comma-separated
+  tools               String?        // Figma, Next.js, etc.
+  coverImage          String?
+  galleryImages       String?        // JSON Array string
+  problem             String?
+  outcomes            String?
+  reflection          String?
+  externalUrl         String?
+  githubUrl           String?
+  relatedActivitySlug String?
+  featured            Boolean        @default(false)
+  status              String         @default("DRAFT") // "DRAFT", "PUBLISHED", "ARCHIVED"
+  sortOrder           Int            @default(0)
+  completedAt         DateTime?
+  seoTitle            String?
+  seoDescription      String?
+  ogImage             String?
+  rawContent          String?        // Structured Tiptap HTML or JSON
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  blocks              ProjectBlock[]
+
+  @@index([slug])
+  @@index([status, featured, sortOrder])
+  @@map("projects")
+}
+
+model ProjectBlock {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String   // "paragraph", "heading", "image", "video", "gallery", "code", "quote", "callout", "process_timeline"
+  order     Int      @default(0)
+  data      String   // JSON block data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, order])
+  @@map("project_blocks")
+}
+
+// ----------------------------------------------------
+// ACTIVITIES (Events, Bootcamps, Workshops, Competitions)
+// ----------------------------------------------------
+
+model Activity {
+  id             String          @id @default(cuid())
+  title          String
+  slug           String          @unique
+  shortSummary   String
+  category       String          // "Competition", "Bootcamp", "Workshop", "Teaching", "Exhibition", "Community", "Project"
+  location       String?
+  eventDate      DateTime
+  startDate      DateTime?
+  endDate        DateTime?
+  organization   String?
+  role           String?
+  coverImage     String?
+  galleryImages  String?         // JSON Array string
+  videoUrl       String?
+  objectives     String?
+  responsibilities String?
+  outcomes       String?
+  reflection     String?
+  skillsGained   String?         // Comma-separated or JSON
+  tags           String?
+  externalLinks  String?         // JSON string of links
+  externalUrl    String?
+  githubUrl      String?
+  attachments    String?         // JSON string of files
+  certificateUrl String?
+  featured       Boolean         @default(false)
+  status         String          @default("DRAFT") // "DRAFT", "PUBLISHED", "ARCHIVED"
+  sortOrder      Int             @default(0)
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+  rawContent     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  blocks         ActivityBlock[]
+
+  @@index([slug])
+  @@index([status, sortOrder])
+  @@map("activities")
+}
+
+model ActivityBlock {
+  id         String   @id @default(cuid())
+  activityId String
+  type       String   // "paragraph", "image", "video", "process_timeline", "quote", "callout"
+  order      Int      @default(0)
+  data       String   // JSON data
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId, order])
+  @@map("activity_blocks")
+}
+
+// ----------------------------------------------------
+// BLOG (Articles & Essays)
+// ----------------------------------------------------
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  posts       BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogTag {
+  id    String     @id @default(cuid())
+  name  String     @unique
+  slug  String     @unique
+  posts BlogPostTag[]
+
+  @@map("blog_tags")
+}
+
+model BlogPost {
+  id             String          @id @default(cuid())
+  title          String
+  slug           String          @unique
+  excerpt        String
+  coverImage     String?
+  author         String          @default("pasiri")
+  categoryId     String?
+  readingTimeMin Int             @default(3)
+  status         String          @default("DRAFT") // "DRAFT", "PUBLISHED", "ARCHIVED"
+  featured       Boolean         @default(false)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+  rawContent     String?         // Structured Tiptap JSON
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       BlogCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags           BlogPostTag[]
+  blocks         BlogBlock[]
+
+  @@index([slug])
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogPostTag {
+  postId String
+  tagId  String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_posts_tags")
+}
+
+model BlogBlock {
+  id        String   @id @default(cuid())
+  postId    String
+  type      String   // "paragraph", "heading", "image", "video", "code", "callout", "process_timeline"
+  order     Int      @default(0)
+  data      String   // JSON data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, order])
+  @@map("blog_blocks")
+}
+
+// ----------------------------------------------------
+// MEDIA LIBRARY
+// ----------------------------------------------------
+
+model Media {
+  id           String   @id @default(cuid())
+  filename     String   // Generated safe storage filename
+  originalName String   // Uploaded name
+  url          String   // Storage access URL
+  mimeType     String
+  fileSize     Int      // bytes
+  width        Int?
+  height       Int?
+  altText      String?
+  caption      String?
+  folder       String   @default("general") // "projects", "activities", "blog", "general"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([folder])
+  @@map("media")
+}
+
+// ----------------------------------------------------
+// DIGITAL ART & DIGITAL PAINTING
+// ----------------------------------------------------
+
+model ArtworkCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  order     Int       @default(0)
+  artworks  Artwork[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("artwork_categories")
+}
+
+model Artwork {
+  id             String           @id @default(cuid())
+  title          String
+  slug           String           @unique
+  description    String?
+  year           Int              @default(2026)
+  date           DateTime         @default(now())
+  categoryId     String?
+  medium         String?          @default("Digital Painting") // "Digital Painting", "Vector Illustration", "Concept Art", "Visual Study"
+  software       String?          // "Procreate", "Photoshop", "Clip Studio Paint", "Blender"
+  dimensions     String?          // "3840 × 2160 px", "3000 × 4000 px"
+  imageUrl       String           // Main High-Res Artwork
+  thumbnailUrl   String?
+  videoUrl       String?          // YouTube Video / Speedpaint Process Timelapse URL
+  gallery        String?          // JSON array of strings
+  processImages  String?          // JSON array of { label: string, imageUrl: string, description?: string }
+  tags           String?
+  featured       Boolean          @default(false)
+  status         String           @default("DRAFT") // "DRAFT", "PUBLISHED", "ARCHIVED"
+  sortOrder      Int              @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  category       ArtworkCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([status, sortOrder])
+  @@map("artworks")
+}
+
+// ----------------------------------------------------
+// REVISION HISTORY
+// ----------------------------------------------------
+
+model Revision {
+  id         String    @id @default(cuid())
+  entityType String    // "BlogPost", "Project", "Activity", "Artwork"
+  entityId   String
+  version    Int       @default(1)
+  title      String
+  snapshot   String    // Full JSON snapshot
+  authorId   String?
+  createdAt  DateTime  @default(now())
+  user       User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@map("revisions")
+}
+
+// ----------------------------------------------------
+// WEBSITE CMS & SECTIONS
+// ----------------------------------------------------
+
+model NavigationItem {
+  id         String   @id @default(cuid())
+  label      String
+  href       String
+  isExternal Boolean  @default(false)
+  order      Int      @default(0)
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("navigation_items")
+}
+
+model HomepageSection {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique // "hero", "featured_projects", "selected_activities", "latest_blog", "experience", "skills", "certifications", "contact_cta"
+  title      String
+  subtitle   String?
+  order      Int      @default(0)
+  isEnabled  Boolean  @default(true)
+  customData String?  // JSON
+  updatedAt  DateTime @updatedAt
+
+  @@map("homepage_sections")
+}
+
+// ----------------------------------------------------
+// SETTINGS
+// ----------------------------------------------------
+
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model ThemeSetting {
+  id             String   @id @default("default")
+  accentColor    String   @default("#2d7063")
+  accentHover    String   @default("#388a7b")
+  fontFamily     String   @default("Inter")
+  monoFont       String   @default("Geist Mono")
+  borderRadius   String   @default("0.5rem")
+  smokeveilDark  Boolean  @default(true)
+  smokeveilLight Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+
+  @@map("theme_settings")
+}
+
+model SEOSetting {
+  id              String   @id @default("default")
+  siteTitle       String   @default("pasiri — Portfolio & Case Studies")
+  siteDescription String   @default("Personal digital home, engineering portfolio, activities, and design case studies of pasiri.")
+  authorName      String   @default("pasiri")
+  keywords        String   @default("pasiri, portfolio, software engineer, UX UI design, frontend, case studies")
+  defaultOgImage  String?
+  twitterHandle   String?  @default("@pasiri")
+  robotsTxt       String   @default("User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/")
+  sitemapEnabled  Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  @@map("seo_settings")
+}

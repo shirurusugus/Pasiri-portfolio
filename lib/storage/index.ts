@@ -64,15 +64,23 @@ export async function saveLocalFile(
   const safeFilename = `${timestamp}-${randomSuffix}.${extension}`;
 
   // Upload destination
-  const uploadDir = join(process.cwd(), "public", "uploads", "media");
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
+  let publicUrl = `/uploads/media/${safeFilename}`;
+
+  try {
+    const uploadDir = join(process.cwd(), "public", "uploads", "media");
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
+
+    const filePath = join(uploadDir, safeFilename);
+    await writeFile(filePath, buffer);
+  } catch (fsError) {
+    // On Vercel / serverless environments where /var/task is read-only,
+    // fallback gracefully to Base64 Data URL so uploads work seamlessly.
+    console.warn("Serverless/read-only environment detected, storing as Data URL:", fsError);
+    const base64 = buffer.toString("base64");
+    publicUrl = `data:${file.type};base64,${base64}`;
   }
-
-  const filePath = join(uploadDir, safeFilename);
-  await writeFile(filePath, buffer);
-
-  const publicUrl = `/uploads/media/${safeFilename}`;
 
   return {
     filename: safeFilename,

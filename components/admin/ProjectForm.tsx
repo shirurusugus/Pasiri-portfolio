@@ -15,6 +15,7 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { ProcessTimelineData } from "@/components/editor/ProcessTimelineEditor";
 import { slugify } from "@/lib/utils";
+import { safeFetchJson } from "@/lib/image-compress";
 
 interface ProjectFormProps {
   initialData?: any;
@@ -110,7 +111,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to save project");
 
       setSaveStatus("saved");
@@ -144,7 +145,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           timelineData,
         }),
       });
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (res.ok && data.project?.id) {
         router.push(`/admin/projects/${data.project.id}`);
       }

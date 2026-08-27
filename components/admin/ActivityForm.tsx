@@ -15,6 +15,7 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { ProcessTimelineData } from "@/components/editor/ProcessTimelineEditor";
 import { slugify } from "@/lib/utils";
+import { safeFetchJson } from "@/lib/image-compress";
 
 interface ActivityFormProps {
   initialData?: any;
@@ -113,7 +114,7 @@ export function ActivityForm({ initialData, isEditing = false }: ActivityFormPro
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to save activity");
 
       setSaveStatus("saved");
@@ -147,7 +148,7 @@ export function ActivityForm({ initialData, isEditing = false }: ActivityFormPro
           timelineData,
         }),
       });
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (res.ok && data.activity?.id) {
         router.push(`/admin/activities/${data.activity.id}`);
       }

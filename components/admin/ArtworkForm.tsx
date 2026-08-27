@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { slugify } from "@/lib/utils";
+import { safeFetchJson } from "@/lib/image-compress";
 
 function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -117,7 +118,7 @@ export function ArtworkForm({
         }),
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to save artwork");
 
       if (!isEditing && data.artwork?.id) {
@@ -147,7 +148,7 @@ export function ArtworkForm({
           processImages: processSteps.length > 0 ? JSON.stringify(processSteps) : null,
         }),
       });
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (res.ok && data.artwork?.id) {
         router.push(`/admin/digital-art/${data.artwork.id}`);
       }

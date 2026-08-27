@@ -5,6 +5,7 @@ import { Upload, Image as ImageIcon, X, AlertCircle, Loader2 } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import { compressImageIfNeeded, safeFetchJson } from "@/lib/image-compress";
 
 interface ImageUploadFieldProps {
   value?: string | null;
@@ -27,13 +28,16 @@ export function ImageUploadField({
   const [error, setError] = useState("");
 
   const handleDirectUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     setUploading(true);
     setError("");
 
     try {
+      // Automatically compress client-side before uploading (reduces 10MB -> ~400KB)
+      const file = await compressImageIfNeeded(rawFile);
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", folder);
@@ -43,7 +47,7 @@ export function ImageUploadField({
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to upload file");
 
       if (data.media?.url) {

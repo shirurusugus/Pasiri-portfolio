@@ -14,6 +14,7 @@ import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { ProcessTimelineData } from "@/components/editor/ProcessTimelineEditor";
 import { slugify } from "@/lib/utils";
+import { safeFetchJson } from "@/lib/image-compress";
 
 interface BlogFormProps {
   initialData?: any;
@@ -83,7 +84,7 @@ export function BlogForm({ initialData, categories = [], isEditing = false }: Bl
         }),
       });
 
-      const data = await res.json();
+      const data = await safeFetchJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to save article");
 
       setSaveStatus("saved");

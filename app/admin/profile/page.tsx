@@ -493,7 +493,7 @@ export default function AdminProfilePage() {
 
       {/* Media Picker Modal */}
       <MediaPickerModal
-        open={mediaModalOpen}
+        isOpen={mediaModalOpen}
         onOpenChange={setMediaModalOpen}
         onSelect={(media) => {
           setFormData((prev) => ({ ...prev, resumeUrl: media.url }));

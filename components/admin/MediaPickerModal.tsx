@@ -26,6 +26,7 @@ interface MediaPickerModalProps {
   trigger?: React.ReactNode;
   title?: string;
   isOpen?: boolean;
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
@@ -33,9 +34,11 @@ export function MediaPickerModal({
   onSelect,
   trigger,
   title = "Select from Media Library",
-  isOpen: controlledOpen,
+  isOpen: propIsOpen,
+  open: propOpen,
   onOpenChange: setControlledOpen,
 }: MediaPickerModalProps) {
+  const controlledOpen = propIsOpen !== undefined ? propIsOpen : propOpen;
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;

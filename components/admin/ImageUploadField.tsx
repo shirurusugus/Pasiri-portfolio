@@ -2,10 +2,9 @@
 
 import React, { useState } from "react";
 import { Upload, Image as ImageIcon, X, AlertCircle, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { compressImageIfNeeded, safeFetchJson } from "@/lib/image-compress";
+import { ImageLightboxModal } from "@/components/ui/ImageLightboxModal";
 
 interface ImageUploadFieldProps {
   value?: string | null;
@@ -26,6 +25,7 @@ export function ImageUploadField({
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [showLightbox, setShowLightbox] = useState(false);
 
   const handleDirectUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
@@ -67,16 +67,21 @@ export function ImageUploadField({
 
       {/* Preview Box */}
       {value ? (
-        <div className="relative h-44 w-full overflow-hidden rounded-xl border border-border bg-surface-secondary">
+        <div className="group relative h-44 w-full overflow-hidden rounded-xl border border-border bg-surface-secondary cursor-pointer">
           <img
             src={value}
             alt="Preview"
-            className="h-full w-full object-contain"
+            onClick={() => setShowLightbox(true)}
+            className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
+            title="Click to view full size"
           />
           <button
             type="button"
-            onClick={() => onChange("")}
-            className="absolute top-2 right-2 rounded-md bg-black/75 p-1.5 text-destructive hover:bg-destructive hover:text-white transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange("");
+            }}
+            className="absolute top-2 right-2 rounded-md bg-black/75 p-1.5 text-destructive hover:bg-destructive hover:text-white transition-colors z-10"
             title="Remove image"
           >
             <X className="h-3.5 w-3.5" />
@@ -87,6 +92,16 @@ export function ImageUploadField({
           <ImageIcon className="h-7 w-7 text-muted-foreground/50 mb-2" />
           <p className="text-xs text-muted-foreground">No image selected</p>
         </div>
+      )}
+
+      {/* Lightbox for uploaded image */}
+      {value && showLightbox && (
+        <ImageLightboxModal
+          isOpen={showLightbox}
+          onClose={() => setShowLightbox(false)}
+          src={value}
+          title={label || "Image Preview"}
+        />
       )}
 
       {error && (

@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Upload, Search, Copy, Check, Trash2, Filter, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Upload, Search, Copy, Check, Trash2, Filter, Image as ImageIcon, AlertCircle, Eye, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { compressImageIfNeeded, safeFetchJson } from "@/lib/image-compress";
+import { ImageLightboxModal } from "@/components/ui/ImageLightboxModal";
 
 interface MediaItem {
   id: string;
@@ -30,6 +31,7 @@ export default function AdminMediaPage() {
   const [folder, setFolder] = useState("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const loadMedia = async () => {
     setLoading(true);
@@ -187,7 +189,7 @@ export default function AdminMediaPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const isImage = item.mimeType.startsWith("image/");
             const isCopied = copiedId === item.id;
 
@@ -196,23 +198,38 @@ export default function AdminMediaPage() {
                 key={item.id}
                 className="group flex flex-col justify-between rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/40 shadow-sm"
               >
-                <div className="relative h-36 w-full bg-black/20 overflow-hidden">
+                <div
+                  onClick={() => isImage && setPreviewIndex(index)}
+                  className={`relative h-36 w-full bg-black/20 overflow-hidden ${isImage ? "cursor-pointer" : ""}`}
+                  title={isImage ? "Click to preview full size" : undefined}
+                >
                   {isImage ? (
-                    <Image
-                      src={item.url}
-                      alt={item.altText || item.originalName}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                    <>
+                      <Image
+                        src={item.url}
+                        alt={item.altText || item.originalName}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {/* Hover overlay hint */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <div className="rounded-full bg-black/70 p-2 text-white shadow-md">
+                          <ZoomIn className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </>
                   ) : (
                     <div className="flex h-full items-center justify-center font-mono text-xs text-muted-foreground uppercase">
                       {item.mimeType.split("/")[1] || "FILE"}
                     </div>
                   )}
 
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <button
-                      onClick={() => handleDelete(item.id, item.originalName)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item.id, item.originalName);
+                      }}
                       className="rounded-md bg-black/70 p-1.5 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
                       title="Delete asset"
                     >
@@ -253,6 +270,21 @@ export default function AdminMediaPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Lightbox Preview Modal */}
+      {previewIndex !== null && items[previewIndex] && (
+        <ImageLightboxModal
+          isOpen={previewIndex !== null}
+          onClose={() => setPreviewIndex(null)}
+          src={items[previewIndex].url}
+          title={items[previewIndex].originalName}
+          subtitle={`${(items[previewIndex].fileSize / 1024).toFixed(0)} KB • Folder: ${items[previewIndex].folder}`}
+          hasPrev={previewIndex > 0}
+          hasNext={previewIndex < items.length - 1}
+          onPrev={() => setPreviewIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+          onNext={() => setPreviewIndex((prev) => (prev !== null && prev < items.length - 1 ? prev + 1 : prev))}
+        />
       )}
     </div>
   );

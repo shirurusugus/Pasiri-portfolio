@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Upload, Search, Check, Copy, Trash2, X, Plus, AlertCircle } from "lucide-react";
+import { Upload, Search, Check, Copy, Trash2, X, Plus, AlertCircle, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import { compressImageIfNeeded, safeFetchJson } from "@/lib/image-compress";
+import { ImageLightboxModal } from "@/components/ui/ImageLightboxModal";
 
 interface MediaItem {
   id: string;
@@ -56,6 +57,7 @@ export function MediaPickerModal({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
   const [query, setQuery] = useState("");
   const [folder, setFolder] = useState("all");
   const [uploadError, setUploadError] = useState("");
@@ -200,12 +202,28 @@ export function MediaPickerModal({
                   >
                     <div className="relative h-28 w-full overflow-hidden rounded bg-black/20">
                       {isImage ? (
-                        <Image
-                          src={item.url}
-                          alt={item.altText || item.originalName}
-                          fill
-                          className="object-cover"
-                        />
+                        <>
+                          <Image
+                            src={item.url}
+                            alt={item.altText || item.originalName}
+                            fill
+                            className="object-cover"
+                          />
+                          {/* Eye / Zoom Preview Button */}
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewItem(item);
+                              }}
+                              className="rounded-full bg-black/75 p-1.5 text-white hover:bg-black hover:scale-110 transition-all shadow-md"
+                              title="Preview full-size image"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </>
                       ) : (
                         <div className="flex h-full items-center justify-center text-xs font-mono text-muted-foreground uppercase">
                           {item.mimeType.split("/")[1] || "FILE"}
@@ -213,7 +231,7 @@ export function MediaPickerModal({
                       )}
 
                       {isSelected && (
-                        <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+                        <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
                           <Check className="h-3.5 w-3.5" />
                         </div>
                       )}
@@ -253,6 +271,17 @@ export function MediaPickerModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Full-screen Lightbox Preview */}
+      {previewItem && (
+        <ImageLightboxModal
+          isOpen={Boolean(previewItem)}
+          onClose={() => setPreviewItem(null)}
+          src={previewItem.url}
+          title={previewItem.originalName}
+          subtitle={`${(previewItem.fileSize / 1024).toFixed(0)} KB • Folder: ${previewItem.folder}`}
+        />
+      )}
     </Dialog>
   );
 }

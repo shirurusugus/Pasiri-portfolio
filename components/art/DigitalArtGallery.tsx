@@ -1,12 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Maximize2, ArrowRight, Sparkles, Video } from "lucide-react";
+import { Maximize2, ArrowRight, Sparkles, Video, Palette } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ArtworkLightbox } from "@/components/art/ArtworkLightbox";
 import { cn } from "@/lib/utils";
+
+function GalleryCardImage({
+  src,
+  alt,
+  fallbackSrc,
+}: {
+  src: string;
+  alt: string;
+  fallbackSrc?: string;
+}) {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setHasError(false);
+  }, [src]);
+
+  if (hasError) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center bg-surface-secondary/80 p-4 text-center">
+        <Palette className="h-8 w-8 text-accent/50 mb-2" />
+        <span className="text-[11px] font-medium text-foreground line-clamp-1">{alt}</span>
+        <span className="text-[10px] text-muted-foreground mt-0.5">Visual Artwork</span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      className="object-cover transition-transform duration-500 group-hover:scale-105"
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      onError={() => {
+        if (fallbackSrc && imgSrc !== fallbackSrc) {
+          setImgSrc(fallbackSrc);
+        } else {
+          setHasError(true);
+        }
+      }}
+    />
+  );
+}
 
 interface ArtworkCategory {
   id: string;
@@ -102,12 +147,10 @@ export function DigitalArtGallery({
             >
               {/* Image Container with preserved ratio */}
               <div className="relative mb-4 h-72 w-full overflow-hidden rounded-xl bg-surface-secondary border border-border/50">
-                <Image
+                <GalleryCardImage
                   src={art.thumbnailUrl || art.imageUrl}
+                  fallbackSrc={art.imageUrl}
                   alt={art.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
 
                 {/* Lightbox Quick Action Overlay */}

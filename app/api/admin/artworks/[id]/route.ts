@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma, createSafeRevision } from "@/lib/db/prisma";
 import { getSession } from "@/lib/auth/session";
 import { ArtworkSchema } from "@/lib/validation/schemas";
@@ -72,6 +73,16 @@ export async function PUT(
       authorId: session.userId,
     });
 
+    try {
+      revalidatePath("/digital-art");
+      revalidatePath("/");
+      if (updated.slug) {
+        revalidatePath(`/digital-art/${updated.slug}`);
+      }
+    } catch (e) {
+      console.warn("Revalidation error:", e);
+    }
+
     return NextResponse.json({ success: true, artwork: updated });
   } catch (error: any) {
     console.error("Update artwork error:", error);
@@ -88,7 +99,23 @@ export async function DELETE(
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
+    const existing = await prisma.artwork.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
+
     await prisma.artwork.delete({ where: { id } });
+
+    try {
+      revalidatePath("/digital-art");
+      revalidatePath("/");
+      if (existing?.slug) {
+        revalidatePath(`/digital-art/${existing.slug}`);
+      }
+    } catch (e) {
+      console.warn("Revalidation error:", e);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete artwork" }, { status: 500 });

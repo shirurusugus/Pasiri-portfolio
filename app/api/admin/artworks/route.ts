@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma, createSafeRevision } from "@/lib/db/prisma";
 import { getSession } from "@/lib/auth/session";
 import { ArtworkSchema } from "@/lib/validation/schemas";
@@ -51,6 +52,16 @@ export async function POST(request: NextRequest) {
       snapshot: JSON.stringify(created),
       authorId: session.userId,
     });
+
+    try {
+      revalidatePath("/digital-art");
+      revalidatePath("/");
+      if (created.slug) {
+        revalidatePath(`/digital-art/${created.slug}`);
+      }
+    } catch (e) {
+      console.warn("Revalidation error:", e);
+    }
 
     return NextResponse.json({ success: true, artwork: created });
   } catch (error: any) {

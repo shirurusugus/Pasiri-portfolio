@@ -17,10 +17,35 @@ export default async function DigitalArtPage() {
     prisma.artwork.findMany({
       where: { status: "PUBLISHED" },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      include: { category: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        year: true,
+        medium: true,
+        software: true,
+        dimensions: true,
+        imageUrl: true,
+        thumbnailUrl: true,
+        videoUrl: true,
+        featured: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
     }),
     prisma.artworkCategory.findMany({
       orderBy: { order: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
     }),
   ]);
 

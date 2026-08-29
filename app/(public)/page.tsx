@@ -38,7 +38,21 @@ export default async function HomePage() {
       where: { status: "PUBLISHED", featured: true },
       take: 3,
       orderBy: { sortOrder: "asc" },
-      include: { category: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        year: true,
+        imageUrl: true,
+        thumbnailUrl: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     }),
     prisma.blogPost.findMany({
       where: { status: "PUBLISHED" },

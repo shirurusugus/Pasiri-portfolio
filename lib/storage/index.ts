@@ -77,9 +77,23 @@ export async function saveLocalFile(
   } catch (fsError) {
     // On Vercel / serverless environments where /var/task is read-only,
     // fallback gracefully to Base64 Data URL so uploads work seamlessly.
-    console.warn("Serverless/read-only environment detected, storing as Data URL:", fsError);
-    const base64 = buffer.toString("base64");
-    publicUrl = `data:${file.type};base64,${base64}`;
+    console.warn("Serverless/read-only environment detected, storing as compressed Data URL:", fsError);
+    try {
+      if (file.type.startsWith("image/") && !file.type.includes("svg") && !file.type.includes("gif")) {
+        const sharp = (await import("sharp")).default;
+        const compressed = await sharp(buffer)
+          .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toBuffer();
+        publicUrl = `data:image/webp;base64,${compressed.toString("base64")}`;
+      } else {
+        const base64 = buffer.toString("base64");
+        publicUrl = `data:${file.type};base64,${base64}`;
+      }
+    } catch {
+      const base64 = buffer.toString("base64");
+      publicUrl = `data:${file.type};base64,${base64}`;
+    }
   }
 
   return {

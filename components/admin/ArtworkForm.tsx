@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { slugify } from "@/lib/utils";
-import { safeFetchJson } from "@/lib/image-compress";
+import { safeFetchJson, createThumbnailDataUrl } from "@/lib/image-compress";
 
 function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -98,11 +98,37 @@ export function ArtworkForm({
     setProcessSteps(processSteps.filter((_, i) => i !== index));
   };
 
+  const handlePrimaryImageChange = async (url: string) => {
+    let newThumb = formData.thumbnailUrl;
+    if (url) {
+      try {
+        const generatedThumb = await createThumbnailDataUrl(url, 480, 0.75);
+        if (generatedThumb) newThumb = generatedThumb;
+      } catch (e) {
+        console.warn("Could not auto-generate thumbnail:", e);
+      }
+    } else {
+      newThumb = "";
+    }
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: url,
+      thumbnailUrl: newThumb,
+    }));
+  };
+
   const handleSave = async (statusOverride?: "DRAFT" | "PUBLISHED" | "ARCHIVED") => {
     setLoading(true);
     setError("");
 
     const targetStatus = statusOverride || formData.status;
+
+    let finalThumb = formData.thumbnailUrl;
+    if (formData.imageUrl && !finalThumb) {
+      try {
+        finalThumb = await createThumbnailDataUrl(formData.imageUrl, 480, 0.75);
+      } catch {}
+    }
 
     try {
       const url = isEditing ? `/api/admin/artworks/${initialData.id}` : "/api/admin/artworks";
@@ -113,6 +139,7 @@ export function ArtworkForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          thumbnailUrl: finalThumb,
           status: targetStatus,
           processImages: processSteps.length > 0 ? JSON.stringify(processSteps) : null,
         }),
@@ -466,10 +493,29 @@ export function ArtworkForm({
 
             <ImageUploadField
               value={formData.imageUrl}
-              onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+              onChange={handlePrimaryImageChange}
               folder="artworks"
               placeholder="High-res artwork image URL or upload"
               required
+            />
+          </div>
+
+          {/* Gallery Thumbnail (Auto-generated & editable) */}
+          <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Gallery Thumbnail
+              </h3>
+              <span className="text-[10px] text-muted-foreground font-mono">Auto-generated</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Used in gallery cards for lightning-fast loading. Automatically created from primary image.
+            </p>
+            <ImageUploadField
+              value={formData.thumbnailUrl}
+              onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+              folder="artworks"
+              placeholder="Auto-generated thumbnail URL"
             />
           </div>
 

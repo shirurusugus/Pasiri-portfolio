@@ -70,6 +70,77 @@ export async function compressImageIfNeeded(
 }
 
 /**
+ * Create a lightweight, optimized thumbnail (max 480px) as Data URL.
+ * Typically 15KB - 40KB, perfect for instant gallery grid rendering.
+ */
+export async function createThumbnailDataUrl(
+  source: File | string,
+  maxDimension = 480,
+  quality = 0.75
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    const processLoadedImage = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (!width || !height) {
+        return resolve(typeof source === "string" ? source : "");
+      }
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        return resolve(typeof source === "string" ? source : "");
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      try {
+        // Prefer webp if supported, otherwise jpeg
+        const dataUrl = canvas.toDataURL("image/webp", quality);
+        resolve(dataUrl);
+      } catch {
+        try {
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        } catch (e) {
+          resolve(typeof source === "string" ? source : "");
+        }
+      }
+    };
+
+    img.onload = processLoadedImage;
+    img.onerror = () => resolve(typeof source === "string" ? source : "");
+
+    if (typeof source === "string") {
+      img.src = source;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(source);
+    }
+  });
+}
+
+/**
  * Safely parse JSON from fetch Response, handling 413, 504, 500 HTML gracefully
  */
 export async function safeFetchJson(res: Response): Promise<any> {
@@ -86,3 +157,4 @@ export async function safeFetchJson(res: Response): Promise<any> {
     throw new Error("Invalid response from server");
   }
 }
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, MapPin, Send, CheckCircle2, AlertCircle, Github, Linkedin, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export default function ContactPage() {
+  const [profile, setProfile] = useState<{
+    email?: string;
+    location?: string;
+    githubUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+  }>({
+    email: "sugus.su791@gmail.com",
+    location: "Bangkok, Thailand (UTC+7)",
+    githubUrl: "https://github.com",
+    linkedinUrl: "https://linkedin.com",
+    twitterUrl: "https://twitter.com",
+  });
+
+  useEffect(() => {
+    fetch("/api/admin/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.profile) {
+          setProfile((prev) => ({
+            ...prev,
+            email: data.profile.email || prev.email,
+            location: data.profile.location || prev.location,
+            githubUrl: data.profile.githubUrl || prev.githubUrl,
+            linkedinUrl: data.profile.linkedinUrl || prev.linkedinUrl,
+            twitterUrl: data.profile.twitterUrl || prev.twitterUrl,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -72,13 +104,13 @@ export default function ContactPage() {
             <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-center gap-3 text-muted-foreground">
                 <Mail className="h-4 w-4 text-accent" />
-                <a href="mailto:pasiri@example.com" className="text-foreground hover:underline">
-                  pasiri@example.com
+                <a href={`mailto:${profile.email || "sugus.su791@gmail.com"}`} className="text-foreground hover:underline">
+                  {profile.email || "sugus.su791@gmail.com"}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">
                 <MapPin className="h-4 w-4 text-accent" />
-                <span>Bangkok, Thailand (UTC+7)</span>
+                <span>{profile.location || "Bangkok, Thailand (UTC+7)"}</span>
               </div>
             </div>
           </div>
@@ -88,33 +120,39 @@ export default function ContactPage() {
               Online Profiles
             </h3>
             <div className="flex flex-col space-y-2 text-xs">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Github className="h-4 w-4" />
-                <span>GitHub Repository</span>
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Linkedin className="h-4 w-4" />
-                <span>LinkedIn Profile</span>
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Twitter className="h-4 w-4" />
-                <span>Twitter / X</span>
-              </a>
+              {profile.githubUrl && (
+                <a
+                  href={profile.githubUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Github className="h-4 w-4" />
+                  <span>GitHub Repository</span>
+                </a>
+              )}
+              {profile.linkedinUrl && (
+                <a
+                  href={profile.linkedinUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Linkedin className="h-4 w-4" />
+                  <span>LinkedIn Profile</span>
+                </a>
+              )}
+              {profile.twitterUrl && (
+                <a
+                  href={profile.twitterUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Twitter className="h-4 w-4" />
+                  <span>Twitter / X</span>
+                </a>
+              )}
             </div>
           </div>
         </div>

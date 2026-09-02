@@ -19,7 +19,7 @@ export function Footer({
     github: "https://github.com",
     linkedin: "https://linkedin.com",
     twitter: "https://twitter.com",
-    email: "pasiri@example.com",
+    email: "sugus.su791@gmail.com",
   },
 }: FooterProps) {
   const currentYear = new Date().getFullYear();

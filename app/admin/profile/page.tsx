@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   Save,
@@ -15,6 +15,11 @@ import {
   Plus,
   Trash2,
   Edit,
+  FileText,
+  Upload,
+  ExternalLink,
+  Loader2,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +60,9 @@ export default function AdminProfilePage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeUploadMsg, setResumeUploadMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
 
   // Educations State
   const [educations, setEducations] = useState<any[]>([]);
@@ -130,6 +138,39 @@ export default function AdminProfilePage() {
       setError(err.message || "Failed to save");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      setResumeUploadMsg({ type: "error", text: "Please upload a valid PDF document (.pdf)" });
+      return;
+    }
+
+    setUploadingResume(true);
+    setResumeUploadMsg(null);
+
+    const data = new FormData();
+    data.append("file", file);
+
+    try {
+      const res = await fetch("/api/admin/profile/resume", {
+        method: "POST",
+        body: data,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to upload resume PDF");
+
+      setFormData((prev) => ({ ...prev, resumeUrl: json.url }));
+      setResumeUploadMsg({ type: "success", text: `Uploaded ${file.name} successfully!` });
+    } catch (err: any) {
+      setResumeUploadMsg({ type: "error", text: err.message || "Upload failed." });
+    } finally {
+      setUploadingResume(false);
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
     }
   };
 
@@ -347,29 +388,115 @@ export default function AdminProfilePage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Resume & CV Document</span>
             </h3>
-            <div className="space-y-2">
-              <Label className="text-xs">PDF Resume File / Link</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={formData.resumeUrl}
-                  onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
-                  placeholder="/uploads/resume.pdf or https://..."
-                  className="text-xs font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMediaModalOpen(true)}
-                  className="shrink-0 text-xs gap-1"
+
+            {/* Hidden File Input for PDF */}
+            <input
+              ref={resumeInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={handleResumeUpload}
+            />
+
+            {/* Upload Action Button */}
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingResume}
+                className="w-full rounded-lg gap-2 border-dashed border-border/80 hover:border-accent hover:bg-accent/5 py-5 text-xs"
+                onClick={() => resumeInputRef.current?.click()}
+              >
+                {uploadingResume ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                    <span>Uploading resume.pdf...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 text-accent" />
+                    <span>Upload Resume PDF (.pdf)</span>
+                  </>
+                )}
+              </Button>
+
+              {resumeUploadMsg && (
+                <div
+                  className={`flex items-center gap-2 rounded-md p-2.5 text-xs ${
+                    resumeUploadMsg.type === "success"
+                      ? "bg-accent/10 border border-accent/30 text-accent"
+                      : "bg-destructive/10 border border-destructive/30 text-destructive"
+                  }`}
                 >
-                  <ImageIcon className="h-3.5 w-3.5" />
-                  <span>Choose</span>
-                </Button>
+                  {resumeUploadMsg.type === "success" ? (
+                    <FileCheck className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  )}
+                  <span>{resumeUploadMsg.text}</span>
+                </div>
+              )}
+
+              {/* Current PDF file display / management */}
+              {formData.resumeUrl && formData.resumeUrl !== "/resume" && (
+                <div className="rounded-lg border border-border/80 bg-surface-secondary/40 p-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="rounded bg-accent/10 p-1.5 text-accent shrink-0">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">
+                        {formData.resumeUrl.split("/").pop() || "Resume.pdf"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono truncate">
+                        {formData.resumeUrl}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                      <a href={formData.resumeUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setFormData((prev) => ({ ...prev, resumeUrl: "" }))}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-[11px] text-muted-foreground">Or Direct URL / Custom Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.resumeUrl}
+                    onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
+                    placeholder="/uploads/resume.pdf or https://..."
+                    className="text-xs font-mono h-8"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMediaModalOpen(true)}
+                    className="shrink-0 text-xs gap-1 h-8"
+                  >
+                    <ImageIcon className="h-3 w-3" />
+                    <span>Library</span>
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  This file is used when visitors click "Download PDF Resume" on the public /resume page.
+                </p>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                This link will be used when visitors click the "Download PDF Resume" button on /resume.
-              </p>
             </div>
           </div>
 

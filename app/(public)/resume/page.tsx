@@ -1,10 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import { Download, Printer, ArrowLeft, Mail, MapPin, Globe, ExternalLink } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, Globe, ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResumeActions } from "@/components/public/ResumeActions";
 
 export const metadata = {
   title: "Resume & Curriculum Vitae",
@@ -34,9 +35,9 @@ export default async function ResumePage() {
   ]);
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-16 animate-in fade-in duration-500">
+    <div className="container mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-16 animate-in fade-in duration-500 print:py-0 print:px-0 print:max-w-none">
       {/* Top Bar Actions */}
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-6 no-print">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors"
@@ -45,18 +46,11 @@ export default async function ResumePage() {
           <span>Back to Home</span>
         </Link>
 
-        <div className="flex items-center gap-3">
-          <Button asChild size="sm" className="rounded-full gap-2 text-xs">
-            <a href={profile?.resumeUrl || "#"} target="_blank" rel="noreferrer" download>
-              <Download className="h-3.5 w-3.5" />
-              <span>Download PDF Resume</span>
-            </a>
-          </Button>
-        </div>
+        <ResumeActions resumeUrl={profile?.resumeUrl} />
       </div>
 
       {/* Structured Clean Resume Document */}
-      <div className="rounded-2xl border border-border/80 bg-surface/50 p-6 sm:p-12 shadow-md space-y-12 backdrop-blur-sm">
+      <div className="rounded-2xl border border-border/80 bg-surface/50 p-6 sm:p-12 shadow-md space-y-12 backdrop-blur-sm print:border-none print:shadow-none print:bg-transparent print:p-0 print:backdrop-blur-none">
         {/* Header Information */}
         <header className="space-y-4 border-b border-border/60 pb-8">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">

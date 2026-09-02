@@ -567,3 +567,56 @@
   mix-blend-mode: multiply;
 }
 
+/* Print optimization for Resume & CV */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  footer,
+  .no-print,
+  [data-print="hidden"] {
+    display: none !important;
+  }
+
+  .smokeveil-canvas,
+  [class*="aura-layer-"] {
+    display: none !important;
+  }
+
+  .border,
+  .border-b,
+  .border-t {
+    border-color: #d1d5db !important;
+  }
+
+  .bg-surface,
+  .bg-surface-secondary {
+    background: transparent !important;
+  }
+
+  .text-foreground {
+    color: #111827 !important;
+  }
+
+  .text-muted-foreground {
+    color: #4b5563 !important;
+  }
+
+  .text-accent {
+    color: #0f766e !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+    size: A4 portrait;
+  }
+}
+
